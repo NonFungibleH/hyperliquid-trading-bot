@@ -26,9 +26,13 @@ export default function Home() {
 
     // Subscribe to fills
     sub.userFills({ user: address }, (data) => {
-      // Assuming data is an object with a 'fills' array or similar structure
-      const newFills = data.fills ? data.fills : [data]; // Adjust based on actual structure
-      setFills((prev) => [...prev, ...newFills]);
+      // Check if data has a fills property and is an array of Fill objects
+      const newFills = Array.isArray(data.fills) ? data.fills : [];
+      if (newFills.length > 0) {
+        setFills((prev) => [...prev, ...newFills]);
+      } else {
+        console.warn('Unexpected data format from userFills:', data);
+      }
     });
 
     // Periodic P&L update
