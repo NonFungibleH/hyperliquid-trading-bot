@@ -26,7 +26,6 @@ export default function Home() {
 
     // Subscribe to fills
     sub.userFills({ user: address }, (data) => {
-      // Check if data has a fills property and is an array of Fill objects
       const newFills = Array.isArray(data.fills) ? data.fills : [];
       if (newFills.length > 0) {
         setFills((prev) => [...prev, ...newFills]);
@@ -38,16 +37,19 @@ export default function Home() {
     // Periodic P&L update
     const interval = setInterval(async () => {
       const state = await info.clearinghouseState({ user: address });
-      // Log the first assetPosition to debug the structure
-      console.log('AssetPosition structure:', state.assetPositions[0]);
+      // Log the structure to identify the correct property
+      if (state.assetPositions.length > 0) {
+        console.log('AssetPosition structure:', state.assetPositions[0]);
+      }
+      // Try different property names (e.g., coin, assetId, asset.coin)
       const swingPnl = state.assetPositions
-        .filter((p) => ["BTC", "ETH"].includes(p.symbol)) // Try 'symbol' instead of 'coin'
+        .filter((p) => ["BTC", "ETH"].includes(p.coin || p.asset?.coin || p.symbol || ''))
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       const scalpPnl = state.assetPositions
-        .filter((p) => ["SOL", "HYPE"].includes(p.symbol))
+        .filter((p) => ["SOL", "HYPE"].includes(p.coin || p.asset?.coin || p.symbol || ''))
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       const momentumPnl = state.assetPositions
-        .filter((p) => ["XRP", "FARTCOIN"].includes(p.symbol))
+        .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin || p.asset?.coin || p.symbol || ''))
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
     }, 60000);
