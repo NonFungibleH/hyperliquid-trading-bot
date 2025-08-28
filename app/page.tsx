@@ -1,1 +1,68 @@
+"use client";
 
+import { useAccount } from "wagmi";
+import ConnectButton from "@/components/ConnectButton";
+import TradingModeCard from "@/components/TradingModeCard";
+import TradeHistory from "@/components/TradeHistory";
+import { useState, useEffect } from "react";
+import { createClients } from "@/lib/hyperliquid";
+import { InfoClient, SubscriptionClient, ExchangeClient } from "@nktkas/hyperliquid";
+import { Fill } from "@/types";
+
+export default function Home() {
+  const { address, isConnected } = useAccount();
+  const [infoClient, setInfoClient] = useState<InfoClient | null>(null);
+  const [subClient, setSubClient] = useState<SubscriptionClient | null>(null);
+  const [exchClient, setExchClient] = useState<ExchangeClient | null>(null);
+  const [fills, setFills] = useState<Fill[]>([]);
+  const [pnls, setPnls] = useState<{ [key: string]: number }>({ swing: 0, scalp: 0, momentum: 0 });
+
+  useEffect(() => {
+    if (isConnected && address) {
+      const { info, sub, exch } = createClients(address);
+      setInfoClient(info);
+      setSubClient(sub);
+      setExchClient(exch);
+
+      // Subscribe to fills
+      sub.userFills({ user: address }, (data) => {
+        setFills((prev) => [...prev, ...data]);
+      });
+
+      // Periodic P&L update
+      const interval = setInterval(async () => {
+        const state = await info.clearinghouseState({ user: address });
+        const swingPnl = state.assetPositions
+          .filter((p) => ["BTC", "ETH"].includes(p.coin))
+          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+        const scalpPnl = state.assetPositions
+          .filter((p) => ["SOL", "HYPE"].includes(p.coin))
+          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+        const momentumPnl = state.assetPositions
+          .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin))
+          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+        setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
+      }, 60000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, address]);
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-24">
+      <ConnectButton />
+      {isConnected ? (
+        <>
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <TradingModeCard mode="swing" pnl={pnls.swing} client={exchClient} subClient={subClient} infoClient={infoClient} />
+            <TradingModeCard mode="scalp" pnl={pnls.scalp} client={exchClient} subClient={subClient} infoClient={infoClient} />
+            <TradingModeCard mode="momentum" pnl={pnls.momentum} client={exchClient} subClient={subClient} infoClient={infoClient} />
+          </div>
+          <TradeHistory fills={fills} />
+        </>
+      ) : (
+        <p className="mt-4">Connect your wallet to start.</p>
+      )}
+    </main>
+  );
+}
