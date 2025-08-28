@@ -1,20 +1,22 @@
-import { http } from "viem";
-import { createConfig } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { configureChains, createConfig, WagmiConfig } from "wagmi";
+import { arbitrum } from "wagmi/chains";
+import { publicProvider } from "wagmi/providers/public";
+import { PhantomConnector } from "wagmi/connectors/phantom";
 
-export const hyperliquidChain = {
-  id: 1337,
-  name: "Hyperliquid Signer",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: { http: ["http://localhost:8545"] },
-  },
-};
+const { chains, publicClient } = configureChains([arbitrum], [publicProvider()]);
 
-export const config = createConfig({
-  chains: [hyperliquidChain],
-  connectors: [injected()],
-  transports: {
-    [hyperliquidChain.id]: http(),
-  },
+const config = createConfig({
+  autoConnect: true,
+  publicClient,
+  connectors: [
+    new PhantomConnector({
+      chains,
+      options: {
+        appName: "Hyperliquid Trading Bot",
+        network: "arbitrum", // Ensure Arbitrum
+      },
+    }),
+  ],
 });
+
+export { config as wagmiConfig, chains };
