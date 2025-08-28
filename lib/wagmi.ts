@@ -1,22 +1,25 @@
-import { configureChains, createConfig, WagmiConfig } from "wagmi";
+// lib/wagmi.ts
+import { createConfig, http } from "wagmi";
 import { arbitrum } from "wagmi/chains";
-import { publicProvider } from "wagmi/providers/public";
-import { PhantomConnector } from "wagmi/connectors/phantom";
+import { injected } from "wagmi/connectors";
+import { walletConnect } from "wagmi/connectors";
+import { coinbaseWallet } from "wagmi/connectors";
 
-const { chains, publicClient } = configureChains([arbitrum], [publicProvider()]);
+// Phantom's EVM wallet is picked up by the injected() connector (window.ethereum).
+// If you want ONLY injected, you can remove the other connectors below.
 
-const config = createConfig({
-  autoConnect: true,
-  publicClient,
+export const config = createConfig({
+  chains: [arbitrum],
+  transports: {
+    [arbitrum.id]: http(), // swap to your own RPC if you hit rate limits
+  },
   connectors: [
-    new PhantomConnector({
-      chains,
-      options: {
-        appName: "Hyperliquid Trading Bot",
-        network: "arbitrum", // Ensure Arbitrum
-      },
-    }),
-  ],
+    injected({ shimDisconnect: true }),
+    // Optional connectors (comment out if not needed)
+    walletConnect({ projectId: "YOUR_WALLETCONNECT_PROJECT_ID" }),
+    coinbaseWallet({ appName: "Hyperliquid Trading Bot" })
+  ]
 });
 
-export { config as wagmiConfig, chains };
+// (Export chains if you reference them elsewhere)
+export const chains = [arbitrum];
