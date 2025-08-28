@@ -18,35 +18,37 @@ export default function Home() {
   const [pnls, setPnls] = useState<{ [key: string]: number }>({ swing: 0, scalp: 0, momentum: 0 });
 
   useEffect(() => {
-    if (isConnected && address) {
-      const { info, sub, exch } = createClients(address);
-      setInfoClient(info);
-      setSubClient(sub);
-      setExchClient(exch);
+  if (isConnected && address) {
+    const { info, sub, exch } = createClients(address);
+    setInfoClient(info);
+    setSubClient(sub);
+    setExchClient(exch);
 
-      // Subscribe to fills
-      sub.userFills({ user: address }, (data) => {
-        setFills((prev) => [...prev, ...data]);
-      });
+    // Subscribe to fills
+    sub.userFills({ user: address }, (data) => {
+      // Assuming data is an object with a 'fills' array or similar structure
+      const newFills = data.fills ? data.fills : [data]; // Adjust based on actual structure
+      setFills((prev) => [...prev, ...newFills]);
+    });
 
-      // Periodic P&L update
-      const interval = setInterval(async () => {
-        const state = await info.clearinghouseState({ user: address });
-        const swingPnl = state.assetPositions
-          .filter((p) => ["BTC", "ETH"].includes(p.coin))
-          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
-        const scalpPnl = state.assetPositions
-          .filter((p) => ["SOL", "HYPE"].includes(p.coin))
-          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
-        const momentumPnl = state.assetPositions
-          .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin))
-          .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
-        setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
-      }, 60000);
+    // Periodic P&L update
+    const interval = setInterval(async () => {
+      const state = await info.clearinghouseState({ user: address });
+      const swingPnl = state.assetPositions
+        .filter((p) => ["BTC", "ETH"].includes(p.coin))
+        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+      const scalpPnl = state.assetPositions
+        .filter((p) => ["SOL", "HYPE"].includes(p.coin))
+        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+      const momentumPnl = state.assetPositions
+        .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin))
+        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+      setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
+    }, 60000);
 
-      return () => clearInterval(interval);
-    }
-  }, [isConnected, address]);
+    return () => clearInterval(interval);
+  }
+}, [isConnected, address]);
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
