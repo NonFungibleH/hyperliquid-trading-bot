@@ -41,16 +41,16 @@ export default function Home() {
       if (state.assetPositions.length > 0) {
         console.log('AssetPosition structure:', state.assetPositions[0]);
       }
-      // Try different property names (e.g., coin, assetId, asset.coin)
-      const swingPnl = state.assetPositions
-        .filter((p) => ["BTC", "ETH"].includes(p.coin || p.asset?.coin || p.symbol || ''))
-        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
-      const scalpPnl = state.assetPositions
-        .filter((p) => ["SOL", "HYPE"].includes(p.coin || p.asset?.coin || p.symbol || ''))
-        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
-      const momentumPnl = state.assetPositions
-        .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin || p.asset?.coin || p.symbol || ''))
-        .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
+      // Use type assertion to bypass strict typing temporarily
+      const swingPnl = (state.assetPositions as any[])
+        .filter((p: any) => ["BTC", "ETH"].includes(p.coin || p.asset?.coin || p.symbol || ''))
+        .reduce((sum, p: any) => sum + (Number(p.position?.szi || 0)), 0);
+      const scalpPnl = (state.assetPositions as any[])
+        .filter((p: any) => ["SOL", "HYPE"].includes(p.coin || p.asset?.coin || p.symbol || ''))
+        .reduce((sum, p: any) => sum + (Number(p.position?.szi || 0)), 0);
+      const momentumPnl = (state.assetPositions as any[])
+        .filter((p: any) => ["XRP", "FARTCOIN"].includes(p.coin || p.asset?.coin || p.symbol || ''))
+        .reduce((sum, p: any) => sum + (Number(p.position?.szi || 0)), 0);
       setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
     }, 60000);
 
