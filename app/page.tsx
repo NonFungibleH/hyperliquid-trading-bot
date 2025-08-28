@@ -38,14 +38,16 @@ export default function Home() {
     // Periodic P&L update
     const interval = setInterval(async () => {
       const state = await info.clearinghouseState({ user: address });
+      // Log the first assetPosition to debug the structure
+      console.log('AssetPosition structure:', state.assetPositions[0]);
       const swingPnl = state.assetPositions
-        .filter((p) => ["BTC", "ETH"].includes(p.coin))
+        .filter((p) => ["BTC", "ETH"].includes(p.symbol)) // Try 'symbol' instead of 'coin'
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       const scalpPnl = state.assetPositions
-        .filter((p) => ["SOL", "HYPE"].includes(p.coin))
+        .filter((p) => ["SOL", "HYPE"].includes(p.symbol))
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       const momentumPnl = state.assetPositions
-        .filter((p) => ["XRP", "FARTCOIN"].includes(p.coin))
+        .filter((p) => ["XRP", "FARTCOIN"].includes(p.symbol))
         .reduce((sum, p) => sum + (Number(p.position?.szi || 0)), 0);
       setPnls({ swing: swingPnl, scalp: scalpPnl, momentum: momentumPnl });
     }, 60000);
